@@ -22,6 +22,7 @@ export const POOLS: Record<string, { label: string; sources: string[] }> = {
   // Ado, Natori, imase, 9Lana, YOASOBI, Kenshi Yonezu
   jpop: { label: 'J-Pop', sources: [...[6049895724, 3884441062, 3884381442].map(playlist), ...[121146382, 59871352, 154196932, 155448802, 108153772, 5289039].map(artistTop)] },
   anime: { label: 'Anime', sources: [9016993522, 5206929684, 11225268324].map(playlist) },
+  animeop: { label: 'Anime Openings', sources: [13319386703, 9908910262].map(playlist) },
   jrock: { label: 'J-Rock', sources: [playlist(6055749804)] },
   latin: { label: 'Latin', sources: [178699142, 1273315391, 789123393].map(playlist) },
   dance: { label: 'Dance / EDM', sources: [706093725, 4135818362, 4135981802].map(playlist) },

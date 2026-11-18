@@ -9,7 +9,7 @@ type State = {
 
 const POOLS: Record<string, string> = {
   all: 'Everything', pop: 'Pop', hiphop: 'Hip-Hop', rock: 'Rock', rnb: 'R&B', country: 'Country', kpop: 'K-Pop',
-  jpop: 'J-Pop', anime: 'Anime', jrock: 'J-Rock', latin: 'Latin', dance: 'Dance / EDM', metal: 'Metal', indie: 'Indie',
+  jpop: 'J-Pop', anime: 'Anime', animeop: 'Anime Openings', jrock: 'J-Rock', latin: 'Latin', dance: 'Dance / EDM', metal: 'Metal', indie: 'Indie',
   soul: 'Soul', afro: 'Afrobeats', jazz: 'Jazz', disney: 'Disney', dutch: 'Nederlands',
   classic: 'Classics (70s–90s)', '2000s': '2000s', '2010s': '2010s', '2020s': '2020s',
 };
