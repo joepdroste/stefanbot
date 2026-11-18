@@ -1,0 +1,21 @@
+{
+  "name": "stefanbot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=.env src/main.ts",
+    "build": "vite build",
+    "check": "tsc --noEmit",
+    "test": "node --test src/"
+  },
+  "dependencies": {
+    "@discord/embedded-app-sdk": "^2.5.0",
+    "@discordjs/voice": "^0.19.2",
+    "discord.js": "^14.28.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
+  }
+}

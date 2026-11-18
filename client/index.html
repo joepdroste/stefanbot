@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Song guess</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main id="app">
+    <header>
+      <h1>Song guess</h1>
+      <nav>
+        <button class="tab" data-mode="daily" aria-pressed="true">Daily</button>
+        <button class="tab" data-mode="endless" aria-pressed="false">Endless</button>
+        <select id="pool" aria-label="Song pool" hidden></select>
+      </nav>
+    </header>
+
+    <p id="status" class="status">Connecting to Discord…</p>
+
+    <section id="game" hidden>
+      <div class="player">
+        <button id="play" class="play" aria-label="Play clip">
+          <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+        </button>
+        <div class="meter">
+          <div id="bar" class="bar"><div id="fill" class="fill"></div></div>
+          <div class="meter-labels"><span id="clip-length">0.1s</span><span>15s</span></div>
+        </div>
+      </div>
+
+      <ol id="rows" class="rows"></ol>
+
+      <form id="guess-form" class="guess" autocomplete="off">
+        <div class="search">
+          <input id="search" type="text" placeholder="Search for the song…" aria-label="Song title">
+          <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
+        </div>
+        <button id="skip" type="button" class="secondary">Skip</button>
+        <button id="submit" type="submit" disabled>Guess</button>
+      </form>
+
+      <div id="result" class="result" hidden>
+        <img id="cover" alt="">
+        <div>
+          <p id="result-line" class="result-line"></p>
+          <p id="answer" class="answer"></p>
+          <p id="share" class="share"></p>
+        </div>
+        <button id="next" hidden>Next song</button>
+      </div>
+
+      <section class="players">
+        <h2>In this game</h2>
+        <ul id="players"></ul>
+      </section>
+    </section>
+  </main>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>
