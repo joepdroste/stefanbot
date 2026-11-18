@@ -3,7 +3,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { dailyIndex, judge, normalize, Round, STAGES, type Track } from './game.ts';
+import { cleanVideoTitle, dailyIndex, isPlaylistLink, judge, normalize, Round, STAGES, type Track } from './game.ts';
 
 const track = (title: string, artist: string, id = 1): Track => ({ id, title, artist, cover: '' });
 const answer = track('Mr. Brightside', 'The Killers');
@@ -72,4 +72,24 @@ test('daily streak counts consecutive won days and stops at a loss or gap', asyn
   assert.equal(dailyStreak('g', 'u1', '2026-11-15'), 0);
   assert.equal(dailyStreak('g', 'u1', '2027-01-01'), 2);
   assert.equal(dailyStreak('g', 'u1', '2026-11-17'), 0);
+});
+
+test('playlist links: Spotify, YouTube and Deezer only', () => {
+  assert.ok(isPlaylistLink('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M?si=abc'));
+  assert.ok(isPlaylistLink('https://open.spotify.com/intl-nl/album/4aawyAB9vmqN3uQ7FjRGTy'));
+  assert.ok(isPlaylistLink('https://www.youtube.com/playlist?list=PLx0sYbCqOb8TBPRdmBHs5Iftvv9TPboYG'));
+  assert.ok(isPlaylistLink('https://music.youtube.com/watch?v=abc&list=RDCLAK5uy_kmPRjHDECIcuVwnKsx2Ng7fyNgFKWNJFs'));
+  assert.ok(isPlaylistLink('https://www.deezer.com/en/playlist/6049895724'));
+  assert.ok(!isPlaylistLink('https://www.youtube.com/watch?v=abc'));
+  assert.ok(!isPlaylistLink('https://open.spotify.com/track/3h5T5JypYU7huFiVYhv1dr'));
+  assert.ok(!isPlaylistLink('https://evil.example/open.spotify.com/playlist/abc'));
+  assert.ok(!isPlaylistLink('pop'));
+});
+
+test('video titles lose channel tags and video noise', () => {
+  assert.equal(cleanVideoTitle('【Ado】BRAIN 歌いました'), 'Ado BRAIN');
+  assert.equal(cleanVideoTitle('YOASOBI「アイドル」 Official Music Video'), 'YOASOBI アイドル');
+  assert.equal(cleanVideoTitle('imase - NIGHT DANCER (Official Music Video)'), 'imase - NIGHT DANCER');
+  assert.equal(cleanVideoTitle('Natori - Overdose [MV]'), 'Natori - Overdose');
+  assert.equal(cleanVideoTitle('Bohemian Rhapsody'), 'Bohemian Rhapsody');
 });

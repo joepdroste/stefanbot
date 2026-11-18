@@ -4,7 +4,7 @@
 
 Song guessing for Discord: hear a 0.1s clip, guess the song, and every skip or miss reveals more (0.5s, 2s, 8s, 15s). Clips are Deezer 30s previews.
 
-- `/play [genre] [voice]` starts a round in the channel; with `voice:true` the bot plays the clips in your voice channel. Anyone guesses with `/guess`, first right answer scores 5 to 1 points.
+- `/play [genre] [voice] [playlist]` starts a round in the channel; with `voice:true` the bot plays the clips in your voice channel. `playlist` takes a Spotify, YouTube or Deezer playlist link; its songs are looked up on Deezer for the clips (YouTube imports need yt-dlp). Anyone guesses with `/guess`, first right answer scores 5 to 1 points.
 - `/daily [song]` is one song per server per day, played privately, with a shareable result grid and streaks.
 - `/leaderboard` shows the server's points.
 - The Activity (launch it from a voice call) has the same Daily and Endless modes in a web UI, and shows everyone's progress.

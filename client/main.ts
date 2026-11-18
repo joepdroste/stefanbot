@@ -3,12 +3,14 @@ import { DiscordSDK } from '@discord/embedded-app-sdk';
 type Mark = 'skip' | 'wrong' | 'artist' | 'correct';
 type Track = { id: number; title: string; artist: string; cover?: string };
 type State = {
-  mode: 'daily' | 'endless'; roundId: string; pool: string; day: string; stages: number[]; marks: Mark[]; seconds: number;
+  mode: 'daily' | 'endless'; roundId: string; pool: string; poolLabel: string; day: string; stages: number[]; marks: Mark[]; seconds: number;
   over: boolean; won: boolean; points: number; answer: Track | null; players: { id: string; name: string; marks: Mark[] }[];
 };
 
 const POOLS: Record<string, string> = {
   all: 'Everything', pop: 'Pop', hiphop: 'Hip-Hop', rock: 'Rock', rnb: 'R&B', country: 'Country', kpop: 'K-Pop',
+  jpop: 'J-Pop', anime: 'Anime', jrock: 'J-Rock', latin: 'Latin', dance: 'Dance / EDM', metal: 'Metal', indie: 'Indie',
+  soul: 'Soul', afro: 'Afrobeats', jazz: 'Jazz', disney: 'Disney', dutch: 'Nederlands',
   classic: 'Classics (70s–90s)', '2000s': '2000s', '2010s': '2010s', '2020s': '2020s',
 };
 const MARK_EMOJI: Record<Mark, string> = { skip: '⬛', wrong: '🟥', artist: '🟨', correct: '🟩' };
@@ -25,6 +27,7 @@ let state: State | null = null;
 // Guess titles only live in this tab; the server just keeps the marks.
 const guessLabels = new Map<string, string[]>();
 let selected: Track | null = null;
+let lastRoundId = '';
 let clip: { key: string; audio: HTMLAudioElement } | null = null;
 
 async function post<T>(path: string, body: object): Promise<T> {
@@ -44,8 +47,22 @@ function render() {
   $('game').hidden = false;
   statusLine.hidden = true;
   for (const tab of document.querySelectorAll<HTMLButtonElement>('.tab')) tab.setAttribute('aria-pressed', String(tab.dataset.mode === mode));
-  $<HTMLSelectElement>('pool').hidden = mode !== 'endless';
-  $<HTMLSelectElement>('pool').value = state.pool;
+  const poolSelect = $<HTMLSelectElement>('pool');
+  poolSelect.hidden = mode !== 'endless';
+  $('playlist-form').hidden = mode !== 'endless';
+  // Imported playlists aren't in the fixed list, so show them as one extra option.
+  // Follow the group's pool whenever a new song starts; until then keep this player's pick for the next song.
+  if (state.roundId !== lastRoundId) {
+    lastRoundId = state.roundId;
+    if (mode === 'endless') pool = state.pool;
+  }
+  poolSelect.querySelector('[data-playlist]')?.remove();
+  if (!(pool in POOLS)) {
+    const option = new Option(pool === state.pool ? state.poolLabel : 'Playlist (next song)', pool);
+    option.dataset.playlist = '';
+    poolSelect.append(option);
+  }
+  poolSelect.value = pool;
 
   // Each stage gets a slice of the bar proportional to its length, with a floor so 0.1s stays visible.
   const total = state.stages.at(-1)!;
@@ -221,13 +238,22 @@ $('next').addEventListener('click', reportErrors(async () => {
   render();
   await playClip();
 }));
-$('pool').addEventListener('change', reportErrors(async () => {
-  pool = $<HTMLSelectElement>('pool').value;
-  if (state?.over) {
+async function switchPool(newPool: string) {
+  pool = newPool;
+  // Mid-song the new pool waits for the next song; before your first guess it switches right away.
+  if (state?.over || !state?.marks.length) {
+    statusLine.hidden = false;
+    statusLine.textContent = pool in POOLS ? 'Loading…' : 'Loading playlist, this can take a minute…';
     state = await post<State>('/api/next', {});
     render();
   }
-}));
+}
+
+$('pool').addEventListener('change', reportErrors(() => switchPool($<HTMLSelectElement>('pool').value)));
+$('playlist-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  reportErrors(() => switchPool($<HTMLInputElement>('playlist').value.trim()))();
+});
 for (const tab of document.querySelectorAll<HTMLButtonElement>('.tab')) {
   tab.addEventListener('click', reportErrors(async () => {
     mode = tab.dataset.mode as typeof mode;

@@ -9,7 +9,7 @@ import {
   type AudioPlayer, type VoiceConnection,
 } from '@discordjs/voice';
 import { Readable } from 'node:stream';
-import { cutClip, dailyTrack, getTrack, POOLS, randomTrack, Round, searchTracks, STAGES, today, type Mark, type Track } from './game.ts';
+import { cutClip, dailyTrack, getTrack, isPlaylistLink, loadPool, POOLS, randomTrack, Round, searchTracks, STAGES, today, type Mark, type Track } from './game.ts';
 import { addScore, dailyStreak, getDailyMarks, leaderboard, saveDailyMarks, type Player } from './store.ts';
 
 type ChannelGame = { round: Round; scope: string; pool: string; voice?: { connection: VoiceConnection; player: AudioPlayer } };
@@ -28,6 +28,7 @@ const commands = [
     options: [
       { name: 'genre', description: 'Song pool', type: ApplicationCommandOptionType.String, choices: Object.entries(POOLS).map(([value, pool]) => ({ name: pool.label, value })) },
       { name: 'voice', description: 'Play the clips in your voice channel', type: ApplicationCommandOptionType.Boolean },
+      { name: 'playlist', description: 'Spotify, YouTube or Deezer playlist link to pick songs from', type: ApplicationCommandOptionType.String },
     ],
   },
   { name: 'guess', description: 'Guess the song of the current round', options: [songOption(true)] },
@@ -54,7 +55,7 @@ async function resolveGuess(value: string): Promise<Track | null> {
 
 async function channelMessage(channelId: string, game: ChannelGame, note = ''): Promise<InteractionEditReplyOptions> {
   const { round } = game;
-  const header = `${note}${note ? '\n' : ''}🎵 **Song guess** · ${POOLS[game.pool].label}\n${round.grid()}`;
+  const header = `${note}${note ? '\n' : ''}🎵 **Song guess** · ${(await loadPool(game.pool)).label}\n${round.grid()}`;
   const attempt = round.marks.length;
   if (round.over) {
     const outcome = round.won ? `Got it for ${round.points} point${round.points === 1 ? '' : 's'}.` : 'Nobody got it.';
@@ -102,7 +103,11 @@ async function onPlay(interaction: ChatInputCommandInteraction) {
   if (existing && !existing.round.over) {
     return interaction.reply({ content: 'A round is already running here. Guess with `/guess` or skip it.', flags: MessageFlags.Ephemeral });
   }
-  const pool = interaction.options.getString('genre') ?? existing?.pool ?? 'all';
+  const playlist = interaction.options.getString('playlist')?.trim();
+  if (playlist && !isPlaylistLink(playlist)) {
+    return interaction.reply({ content: 'That link isn\'t a Spotify, YouTube or Deezer playlist.', flags: MessageFlags.Ephemeral });
+  }
+  const pool = playlist ?? interaction.options.getString('genre') ?? existing?.pool ?? 'all';
   let voice = existing?.voice;
   if (interaction.options.getBoolean('voice') && !voice) {
     const channel = interaction.member instanceof GuildMember ? interaction.member.voice.channel : null;
@@ -115,6 +120,12 @@ async function onPlay(interaction: ChatInputCommandInteraction) {
     voice = { connection, player };
   } else {
     await interaction.deferReply();
+  }
+  try {
+    await loadPool(pool);
+  } catch (error) {
+    console.error(error);
+    return interaction.editReply(`Couldn't load that playlist: ${(error as Error).message}`);
   }
   const game = await startRound(interaction.channelId, dailyScope(interaction), pool, voice);
   await interaction.editReply(await channelMessage(interaction.channelId, game));

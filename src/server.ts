@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize as normalizePath } from 'node:path';
-import { cutClip, dailyTrack, getTrack, POOLS, randomTrack, Round, searchTracks, STAGES, today, type Track } from './game.ts';
+import { cutClip, dailyTrack, getTrack, isPlaylistLink, loadPool, POOLS, randomTrack, Round, searchTracks, STAGES, today, type Track } from './game.ts';
 import { addScore, dailyPlayers, getDailyMarks, saveDailyMarks, type Player } from './store.ts';
 
 const DIST = join(import.meta.dirname, '..', 'dist');
@@ -49,11 +49,15 @@ async function readBody(request: IncomingMessage): Promise<Body> {
   return text ? JSON.parse(text) : {};
 }
 
+function validPool(pool: string | undefined): string | undefined {
+  return pool && (POOLS[pool] || isPlaylistLink(pool)) ? pool : undefined;
+}
+
 async function instanceFor(body: Body): Promise<Instance> {
   if (!body.instance) throw new HttpError(400, 'Missing instance');
   let instance = instances.get(body.instance);
   if (!instance) {
-    const pool = body.pool && POOLS[body.pool] ? body.pool : 'all';
+    const pool = validPool(body.pool) ?? 'all';
     instance = { serial: ++instanceSerial, pool, track: await randomTrack(pool), rounds: new Map() };
     instances.set(body.instance, instance);
   }
@@ -88,6 +92,7 @@ async function state(body: Body, player: Player) {
     // Lets the client notice a new song without revealing which one.
     roundId: body.mode === 'daily' ? today() : String((await instanceFor(body)).serial),
     pool: body.mode === 'daily' ? 'all' : (await instanceFor(body)).pool,
+    poolLabel: (await loadPool(body.mode === 'daily' ? 'all' : (await instanceFor(body)).pool)).label,
     day: today(),
     stages: STAGES,
     marks: round.marks,
@@ -130,10 +135,13 @@ async function api(path: string, body: Body, request: IncomingMessage): Promise<
   if (path === '/api/next') {
     const instance = await instanceFor(body);
     const own = instance.rounds.get(player.id);
-    // Only someone who has finished the current song can move the group on.
-    if (own && !own.round.over) throw new HttpError(409, 'Finish your round first');
-    const pool = body.pool && POOLS[body.pool] ? body.pool : instance.pool;
-    instances.set(body.instance!, { serial: ++instanceSerial, pool, track: await randomTrack(pool), rounds: new Map() });
+    // Only someone who finished the current song, or hasn't started it, can move the group on.
+    if (own && !own.round.over && own.round.marks.length) throw new HttpError(409, 'Finish your round first');
+    const pool = validPool(body.pool) ?? instance.pool;
+    const track = await randomTrack(pool).catch((error) => {
+      throw new HttpError(422, `Couldn't load that playlist: ${error.message}`);
+    });
+    instances.set(body.instance!, { serial: ++instanceSerial, pool, track, rounds: new Map() });
     return state(body, player);
   }
   throw new HttpError(404, 'Not found');

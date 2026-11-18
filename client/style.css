@@ -66,6 +66,16 @@ select { padding: 8px 10px; }
 
 .status { color: var(--muted); }
 
+.playlist { display: flex; gap: 8px; margin-bottom: 16px; }
+.playlist[hidden] { display: none; }
+.playlist input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
 .player { display: flex; gap: 14px; align-items: center; margin-bottom: 18px; }
 
 .play {
